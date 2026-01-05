@@ -1,0 +1,23 @@
+config {
+    type: "view",
+    schema: "staging", 
+    tags: ["staging", "geo"], 
+    assertions: {
+        nonNull: ["region_code", "region_name"], 
+        uniqueKey: ["region_code", "changed_at"], 
+    }
+}
+
+with raw_data as (
+    select *
+    from ${ref("regions")}
+)
+, add_scd as (
+    ${functions.addSCDColumns(
+        "raw_data", 
+        "changed_at", 
+        ["region_code"]
+    )}
+)
+select *
+from add_scd

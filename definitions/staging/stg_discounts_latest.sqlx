@@ -1,0 +1,12 @@
+config {
+    type: "view",
+    schema: "staging", 
+    tags: ["staging", "sales"], 
+    assertions: {
+        uniqueKey: ["sku_id"]
+    }
+}
+
+select *
+from ${ref("stg_discounts")}
+where _is_active = 1

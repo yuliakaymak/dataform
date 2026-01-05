@@ -1,0 +1,12 @@
+config {
+    type: "view",
+    schema: "staging", 
+    tags: ["staging", "geo"], 
+    assertions: {
+        uniqueKey: ["country_id"]
+    }
+}
+
+select *
+from ${ref("stg_countries")}
+where _is_active = 1

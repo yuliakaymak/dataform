@@ -1,0 +1,26 @@
+config {
+    type: "view",
+    schema: "staging", 
+    tags: ["staging", "sales"], 
+    assertions: {
+        nonNull: ["sku_id", "regular_price_usd", "changed_at"],
+        uniqueKey: ["sku_id", "changed_at"], 
+        rowConditions: [
+            'regular_price_usd > 0'
+        ]
+    }
+}
+
+with raw_data as (
+    select *
+    from ${ref("prices")}
+)
+, add_scd as (
+    ${functions.addSCDColumns(
+        "raw_data", 
+        "changed_at", 
+        ["sku_id"]
+    )}
+)
+select *
+from add_scd

@@ -1,0 +1,9 @@
+config {
+    type: "assertion", 
+    tags: ["custom_assertions", "geo"]
+}
+
+${functions.runAssertRelationship(
+    ref("stg_countries"), "region_code", 
+    ref("stg_regions"), "region_code"
+)}
