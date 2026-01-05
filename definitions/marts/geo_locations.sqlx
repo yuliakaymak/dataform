@@ -1,0 +1,36 @@
+config {
+    type: "view",
+    schema: "marts", 
+    tags: ["marts", "geo"]
+}
+
+with locations as (
+    select *
+    from ${ref("stg_locations")}
+)
+, join_cities as (
+    select 
+        locations.*
+        , c.city_name
+        , c.country_id
+    from locations
+    left join ${ref("stg_cities")} as c using (city_id)
+)
+, join_countries as (
+    select 
+        join_cities.*
+        , c.country_code
+        , c.country_name
+        , c.region_code
+    from join_cities
+    left join ${ref("stg_countries_latest")} as c using (country_id)
+)
+, join_regions as (
+    select 
+        join_countries.*
+        , r.region_name
+    from join_countries
+    left join ${ref("stg_regions_latest")} as r using (region_code)
+)
+select *
+from join_regions    

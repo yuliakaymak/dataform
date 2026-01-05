@@ -1,0 +1,12 @@
+config {
+    type: "view",
+    schema: "staging", 
+    tags: ["staging", "geo"], 
+    assertions: {
+        uniqueKey: ["region_code"]
+    }
+}
+
+select *
+from ${ref("stg_regions")}
+where _is_active = 1

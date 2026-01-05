@@ -1,0 +1,42 @@
+config {
+    type: "view",
+    schema: "marts", 
+    tags: ["marts", "sales"]
+}
+
+
+with sales as (
+    select *
+    from ${ref("stg_sales")}
+)
+, join_prices_and_discounts as (
+    select
+        sales.*
+        , p.regular_price_usd
+        , d.discount
+        , p.regular_price_usd * (1 - d.discount) as discounted_price_usd
+    from sales
+    left join ${ref("stg_prices")} as p on sales.sku_id = p.sku_id and sales.sales_date between p._row_valid_from and p._row_valid_to
+    left join ${ref("stg_discounts")} as d on sales.sku_id = d.sku_id and sales.sales_date between d._row_valid_from and d._row_valid_to
+)
+, join_sku as (
+    select 
+        a.*
+        , s.sku_name
+        , s.sku_category
+        , s.sku_price_segment
+    from join_prices_and_discounts as a
+    left join ${ref("stg_sku")} as s using (sku_id)
+)
+, join_locations as (
+    select
+        a.*
+        , g.city_name
+        , g.country_name
+        , g.region_name
+        , g.is_key_country
+    from join_sku as a
+    left join ${ref("geo_locations_enriched")} as g using (location_id)
+)
+select *
+from join_locations

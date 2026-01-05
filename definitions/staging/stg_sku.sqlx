@@ -1,0 +1,12 @@
+config {
+    type: "view",
+    schema: "staging", 
+    tags: ["staging", "products"], 
+    assertions: {
+        nonNull: ["sku_id", "sku_name", "sku_category", "sku_price_segment"], 
+        uniqueKey: ["sku_id"]
+    }
+}
+
+select *
+from ${ref("sku")}

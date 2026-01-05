@@ -1,0 +1,9 @@
+config {
+    type: "assertion", 
+    tags: ["custom_assertions", "sku"]
+}
+
+${functions.runAssertRelationship(
+    ref("stg_sales"), "sku_id", 
+    ref("stg_sku"), "sku_id"
+)}

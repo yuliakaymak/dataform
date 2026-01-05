@@ -1,0 +1,12 @@
+config {
+    type: "view",
+    schema: "staging", 
+    tags: ["staging", "geo"],
+    assertions: {
+        nonNull: ["city_id", "country_id"], 
+        uniqueKey: ["city_id"]
+    }
+}
+
+select *
+from ${ref("cities")}

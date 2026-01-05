@@ -1,0 +1,27 @@
+config {
+    type: "view",
+    schema: "staging", 
+    tags: ["staging", "sales"], 
+    assertions: {
+        nonNull: ["sku_id", "discount"],
+        uniqueKey: ["sku_id", "changed_at"],
+        rowConditions: [
+            'discount between 0 and 1', 
+            'changed_at <= current_date'
+        ]
+    }
+}
+
+with raw_data as (
+    select *
+    from ${ref("discounts")}
+)
+, add_scd as (
+    ${functions.addSCDColumns(
+        "raw_data", 
+        "changed_at", 
+        ["sku_id"]
+    )}
+)
+select * 
+from add_scd

@@ -1,0 +1,26 @@
+config {
+    type: "view",
+    schema: "staging", 
+    tags: ["staging", "geo"], 
+    assertions: {
+        nonNull: ["country_id", "country_code", "region_code"],
+        uniqueKey: ["country_id", "changed_at"], 
+        rowConditions: [
+            'changed_at <= current_date'
+        ]
+    }
+}
+
+with raw_data as (
+    select *
+    from ${ref("countries")}
+)
+, add_scd as (
+    ${functions.addSCDColumns(
+        "raw_data", 
+        "changed_at", 
+        ["country_id"]
+    )}
+)
+select *
+from add_scd

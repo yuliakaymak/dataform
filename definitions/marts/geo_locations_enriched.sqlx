@@ -1,0 +1,15 @@
+config {
+    type: "view",
+    schema: "marts", 
+    tags: ["marts", "geo"]
+}
+
+js {
+    const {KEY_COUNTRIES} = require("includes/vars");
+}
+
+
+select 
+    *
+    , ${functions.caseWhenInList("country_code", KEY_COUNTRIES, "is_key_country")}   
+from ${ref("geo_locations")}

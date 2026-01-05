@@ -1,0 +1,12 @@
+config {
+    type: "view",
+    schema: "staging", 
+    tags: ["staging", "sales"], 
+    assertions: {
+        nonNull: ["id", "sales_date", "sku_id", "location_id", "sales_repr_id"], 
+        uniqueKey: ["id"]
+    }
+}
+
+select *
+from ${ref("fact_sales")}
