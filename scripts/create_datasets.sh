@@ -9,7 +9,15 @@ source "${SCRIPT_DIR}/common.sh"
 
 require_env PR_NUMBER
 
-log "Creating datasets for PR #${PR_NUMBER}"
+check_bq_cli
+
+PROJECT_ID="$(get_default_project)"
+
+log "Creating CI datasets for PR #${PR_NUMBER}"
+log "Google Cloud project: ${PROJECT_ID}"
+
+created=0
+existing=0
 
 while IFS= read -r schema
 do
@@ -17,10 +25,31 @@ do
 
     ci_dataset="$(get_ci_dataset_name "$schema")"
 
-    printf "%-15s -> %s\n" "$schema" "$ci_dataset"
+    log "Processing schema '${schema}'..."
+
+    if bq show --dataset "${PROJECT_ID}:${ci_dataset}" >/dev/null 2>&1; then
+        log "Dataset '${ci_dataset}' already exists."
+
+        ((existing++))
+        continue
+    fi
+
+    log "Creating dataset '${ci_dataset}'..."
+
+    bq mk \
+        --dataset \
+        --location=EU \
+        "${PROJECT_ID}:${ci_dataset}" >/dev/null
+
+    log "Dataset '${ci_dataset}' created."
+
+    ((created++))
 
 done < <(
     python "${SCRIPT_DIR}/lib/graph_parser.py" --schemas
 )
 
-log "Dataset discovery completed."
+echo
+log "Dataset creation completed."
+log "Created : ${created}"
+log "Existing: ${existing}"

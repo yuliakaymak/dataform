@@ -51,3 +51,14 @@ warn() {
 error() {
     echo "[ERROR] $*" >&2
 }
+
+get_default_project() {
+    grep "^defaultProject:" workflow_settings.yaml | awk '{print $2}'
+}
+
+check_bq_cli() {
+    command -v bq >/dev/null 2>&1 || {
+        error "bq CLI is not installed."
+        exit 1
+    }
+}
