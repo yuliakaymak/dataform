@@ -90,3 +90,9 @@ jobs:
         run: |
           gcloud auth list
           gcloud projects describe my-project-19032025 --format="value(projectNumber)"
+
+      - name: Create CI datasets
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          bash scripts/create_datasets.sh
