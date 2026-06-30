@@ -1,0 +1,47 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Dataform Project
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Dataform CLI
+        run: |
+          npm install -g @dataform/cli@3.0.37
+
+      - name: Display tool versions
+        run: |
+          node --version
+          npm --version
+          dataform --version
+
+      - name: Compile Dataform project
+        run: |
+          echo "Compiling Dataform project..."
+          dataform compile
+          echo "Compilation completed successfully."
