@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}
@@ -31,8 +32,13 @@ jobs:
 
       - name: Install Dataform CLI
         run: |
-          npm install -g @dataform/cli@3.0.37
+          source scripts/common.sh
+          VERSION=$(get_dataform_version)
 
+          echo "Installing Dataform CLI ${VERSION}"
+
+          npm install -g @dataform/cli@"${VERSION}"
+          
       - name: Display tool versions
         run: |
           node --version
@@ -44,3 +50,17 @@ jobs:
           echo "Compiling Dataform project..."
           dataform compile
           echo "Compilation completed successfully."
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Verify authentication
+        run: |
+          gcloud auth list
+          gcloud config list project
