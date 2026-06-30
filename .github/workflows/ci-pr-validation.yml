@@ -85,3 +85,8 @@ jobs:
         run: |
           echo "Datasets in project:"
           bq ls
+
+      - name: Verify IAM identity
+        run: |
+          gcloud auth list
+          gcloud projects describe my-project-19032025 --format="value(projectNumber)"
