@@ -48,8 +48,24 @@ jobs:
       - name: Compile Dataform project
         run: |
           echo "Compiling Dataform project..."
-          dataform compile
+          mkdir -p artifacts
+          dataform compile --json > artifacts/graph.json
           echo "Compilation completed successfully."
+
+      - name: Verify graph.json
+        run: |
+          ls -lah artifacts
+          wc -c artifacts/graph.json
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-validation-artifacts
+          path: artifacts/
+
+      - name: Verify Dataform graph
+        run: |
+          python scripts/lib/graph_parser.py --summary
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -64,3 +80,8 @@ jobs:
         run: |
           gcloud auth list
           gcloud config list project
+
+      - name: Verify BigQuery access
+        run: |
+          echo "Datasets in project:"
+          bq ls
