@@ -25,7 +25,7 @@ declare({
 declare({
     database: "my-project-19032025",
     schema: "raw",
-    name: "fact_sales",
+    name: "sales",
 });
 
 declare({

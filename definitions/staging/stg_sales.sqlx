@@ -9,4 +9,4 @@ config {
 }
 
 select *
-from ${ref("fact_sales")}
+from ${ref("sales")}
