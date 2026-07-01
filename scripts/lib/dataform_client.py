@@ -1,6 +1,9 @@
 from google.cloud import dataform_v1beta1
 
-from .models import CompilationResult
+from .models import (
+    CompilationResult,
+    WorkflowInvocation,
+)
 
 
 class DataformClient:
@@ -56,6 +59,35 @@ class DataformClient:
             create_time=getattr(
                 response,
                 "create_time",
+                None,
+            ),
+        )
+    
+
+    def create_workflow_invocation(
+        self,
+        compilation_result_name: str,
+    ) -> WorkflowInvocation:
+        """
+        Creates a Workflow Invocation.
+        """
+
+        workflow_invocation = dataform_v1beta1.WorkflowInvocation(
+            compilation_result=compilation_result_name,
+        )
+
+        response = self.client.create_workflow_invocation(
+            parent=self.repository_path,
+            workflow_invocation=workflow_invocation,
+        )
+
+        return WorkflowInvocation(
+            name=response.name,
+            state=response.state.name,
+            compilation_result=compilation_result_name,
+            invocation_time=getattr(
+                response,
+                "invocation_time",
                 None,
             ),
         )

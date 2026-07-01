@@ -24,8 +24,13 @@ class CompilationResult:
 
 @dataclass(frozen=True)
 class WorkflowInvocation:
+    """
+    Represents a Dataform Workflow Invocation.
+    """
+
     name: str
     state: str
+    compilation_result: str
     invocation_time: Optional[datetime] = None
 
 
