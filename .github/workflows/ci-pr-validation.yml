@@ -118,6 +118,11 @@ jobs:
           print('Region     :', config.dataform_region)
           print('Repository :', config.dataform_repository)
           "
+      - name: List Dataform repositories
+        run: |
+          gcloud dataform repositories list \
+            --location=us-central1 \
+            --project=my-project-19032025
 
       - name: Create Compilation Result
         env:
