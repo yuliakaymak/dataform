@@ -120,8 +120,15 @@ jobs:
           "
 
       - name: Create Compilation Result
+        id: compilation
         env:
           GIT_COMMITISH: ${{ github.event.pull_request.head.sha }}
           SCHEMA_SUFFIX: _ci_pr_${{ github.event.pull_request.number }}
         run: |
           python scripts/create_compilation_result.py
+
+      - name: Create Workflow Invocation
+        env:
+          COMPILATION_RESULT: ${{ steps.compilation.outputs.compilation_result }}
+        run: |
+          python scripts/create_workflow_invocation.py

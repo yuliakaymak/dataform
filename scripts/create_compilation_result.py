@@ -38,6 +38,14 @@ def main():
     print("Compilation Result created successfully.")
     print(result.name)
 
+    github_output = os.getenv("GITHUB_OUTPUT")
+
+    if github_output:
+        with open(github_output, "a", encoding="utf-8") as file:
+            file.write(
+                f"compilation_result={result.name}\n"
+            )
+
 
 if __name__ == "__main__":
     main()
