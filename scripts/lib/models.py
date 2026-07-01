@@ -12,9 +12,14 @@ class Target:
 
 @dataclass(frozen=True)
 class CompilationResult:
+    """
+    Represents a Dataform Compilation Result.
+    """
+
     name: str
     git_commitish: str
-    create_time: Optional[datetime] = None
+    resolved_git_commit_sha: str | None = None
+    create_time: datetime | None = None
 
 
 @dataclass(frozen=True)
