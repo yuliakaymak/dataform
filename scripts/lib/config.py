@@ -5,15 +5,13 @@ from pathlib import Path
 
 import yaml
 
-
 DEFAULT_CONFIG_PATH = Path("ci_settings.yaml")
 
 
 @dataclass(frozen=True)
 class Config:
     """
-    Represents the Dataform CI configuration loaded from
-    workflow_settings.yaml.
+    Represents the CI framework configuration.
     """
 
     project_id: str
@@ -39,9 +37,6 @@ class Config:
 
         return cls(
             project_id=config["gcp"]["project"],
-            default_dataset=None,
-            default_assertion_dataset=None,
             dataform_region=config["dataform"]["region"],
             dataform_repository=config["dataform"]["repository"],
-            dataform_core_version="",
         )

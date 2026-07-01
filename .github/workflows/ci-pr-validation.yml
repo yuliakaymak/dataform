@@ -107,6 +107,18 @@ jobs:
         run: |
           bash scripts/create_datasets.sh
 
+      - name: Display CI configuration
+        run: |
+          python -c "
+          from scripts.lib import Config
+
+          config = Config.from_file()
+
+          print('Project    :', config.project_id)
+          print('Region     :', config.dataform_region)
+          print('Repository :', config.dataform_repository)
+          "
+
       - name: Create Compilation Result
         env:
           GIT_COMMITISH: ${{ github.event.pull_request.head.sha }}
