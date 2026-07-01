@@ -1,0 +1,6 @@
+gcp:
+  project: my-project-19032025
+
+dataform:
+  region: us-central1
+  repository: my-project-19032025

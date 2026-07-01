@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 
 
-DEFAULT_CONFIG_PATH = Path("workflow_settings.yaml")
+DEFAULT_CONFIG_PATH = Path("ci_settings.yaml")
 
 
 @dataclass(frozen=True)
@@ -17,13 +17,8 @@ class Config:
     """
 
     project_id: str
-    default_dataset: str
-    default_assertion_dataset: str
-
     dataform_region: str
     dataform_repository: str
-
-    dataform_core_version: str
 
     @classmethod
     def from_file(
@@ -43,10 +38,10 @@ class Config:
             config = yaml.safe_load(file)
 
         return cls(
-            project_id=config["defaultProject"],
-            default_dataset=config["defaultDataset"],
-            default_assertion_dataset=config["defaultAssertionDataset"],
+            project_id=config["gcp"]["project"],
+            default_dataset=None,
+            default_assertion_dataset=None,
             dataform_region=config["dataform"]["region"],
             dataform_repository=config["dataform"]["repository"],
-            dataform_core_version=str(config["dataformCoreVersion"]),
+            dataform_core_version="",
         )
