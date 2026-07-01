@@ -74,6 +74,11 @@ class DataformClient:
 
         workflow_invocation = dataform_v1beta1.WorkflowInvocation(
             compilation_result=compilation_result_name,
+            invocation_config=dataform_v1beta1.InvocationConfig(
+                service_account=(
+                    "github-dataform-ci@my-project-19032025.iam.gserviceaccount.com"
+                ),
+            ),
         )
 
         response = self.client.create_workflow_invocation(
