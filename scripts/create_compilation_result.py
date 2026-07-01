@@ -1,5 +1,6 @@
 import os
 
+from google.api_core.exceptions import NotFound
 from lib import Config
 from lib import DataformClient
 
@@ -7,17 +8,6 @@ from lib import DataformClient
 def main():
 
     config = Config.from_file()
-
-    git_commitish = os.environ["GIT_COMMITISH"]
-    schema_suffix = os.environ["SCHEMA_SUFFIX"]
-
-    print("=== Configuration ===")
-    print(f"Project      : {config.project_id}")
-    print(f"Region       : {config.dataform_region}")
-    print(f"Repository   : {config.dataform_repository}")
-    print(f"Commit       : {git_commitish}")
-    print(f"SchemaSuffix : {schema_suffix}")
-    print()
 
     client = DataformClient(
         project_id=config.project_id,
@@ -29,13 +19,20 @@ def main():
     print(client.repository_path)
     print()
 
-    result = client.create_compilation_result(
-        git_commitish=git_commitish,
-        schema_suffix=schema_suffix,
-    )
+    print("Checking repository...")
 
-    print("Compilation Result created successfully.")
-    print(result.name)
+    try:
+        repository = client.client.get_repository(
+            name=client.repository_path
+        )
+
+        print("Repository found!")
+        print(repository.name)
+
+    except NotFound as e:
+        print("Repository NOT FOUND.")
+        print(e)
+        raise
 
 
 if __name__ == "__main__":
