@@ -3,4 +3,4 @@ gcp:
 
 dataform:
   region: us-central1
-  repository: my-project-19032025
+  repository: my-project-dataform
