@@ -127,6 +127,11 @@ jobs:
         run: |
           python scripts/create_compilation_result.py
 
+      - name: Show authenticated identity
+        run: |
+          gcloud auth list
+          gcloud config get-value account
+
       - name: Create Workflow Invocation
         env:
           COMPILATION_RESULT: ${{ steps.compilation.outputs.compilation_result }}
