@@ -25,7 +25,8 @@ def main():
         repository_id=config.dataform_repository,
     )
 
-    print(f"Repository path: {client.repository_path}")
+    print("Repository path:")
+    print(client.repository_path)
     print()
 
     result = client.create_compilation_result(

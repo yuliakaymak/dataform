@@ -22,11 +22,7 @@ class DataformClient:
             project_id,
             region,
             repository_id,
-    )
-
-    print("Repository path:")
-    print(self.repository_path)
-    print()
+        )
 
     def create_compilation_result(
         self,
