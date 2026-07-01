@@ -48,4 +48,14 @@ class DataformClient:
         return CompilationResult(
             name=response.name,
             git_commitish=git_commitish,
+            resolved_git_commit_sha=getattr(
+                response,
+                "resolved_git_commit_sha",
+                None,
+            ),
+            create_time=getattr(
+                response,
+                "create_time",
+                None,
+            ),
         )
