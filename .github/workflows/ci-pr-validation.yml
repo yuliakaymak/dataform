@@ -81,6 +81,16 @@ jobs:
           gcloud auth list
           gcloud config list project
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
       - name: Verify BigQuery access
         run: |
           echo "Datasets in project:"
@@ -96,3 +106,10 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           bash scripts/create_datasets.sh
+
+      - name: Create Compilation Result
+        env:
+          GIT_COMMITISH: ${{ github.event.pull_request.head.sha }}
+          SCHEMA_SUFFIX: _ci_pr_${{ github.event.pull_request.number }}
+        run: |
+          python scripts/create_compilation_result.py

@@ -1,4 +1,9 @@
 defaultProject: my-project-19032025
 defaultDataset: dataform
 defaultAssertionDataset: assertions
+
+dataform:
+  region: us-central1
+  repository: my-project-19032025
+
 dataformCoreVersion: 3.0.37
