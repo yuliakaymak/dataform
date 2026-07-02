@@ -10,9 +10,11 @@ require_env PR_NUMBER
 check_bq_cli
 
 PROJECT_ID="$(get_default_project)"
+BQ_LOCATION="$(get_bigquery_location)"
 
 log "Creating CI datasets for PR #${PR_NUMBER}"
-log "Google Cloud project: ${PROJECT_ID}"
+log "Google Cloud project : ${PROJECT_ID}"
+log "BigQuery location    : ${BQ_LOCATION}"
 
 created=0
 existing=0
@@ -33,11 +35,16 @@ do
 
     log "Creating dataset '${ci_dataset}'..."
 
-    if ! bq mk \
-        --dataset \
-        "${PROJECT_ID}:${ci_dataset}" >/dev/null
+    if ! output=$(
+        bq mk \
+            --dataset \
+            --location="${BQ_LOCATION}" \
+            "${PROJECT_ID}:${ci_dataset}" \
+            2>&1
+    )
     then
         error "Failed to create dataset '${ci_dataset}'."
+        echo "${output}"
         exit 1
     fi
 

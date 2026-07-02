@@ -1,5 +1,6 @@
 gcp:
   project: my-project-19032025
+  location: us-central1
 
 dataform:
   region: us-central1
