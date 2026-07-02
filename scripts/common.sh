@@ -41,7 +41,7 @@ get_ci_dataset_name() {
 
     local dataset="$1"
 
-    echo "${dataset}_ci_pr_${PR_NUMBER}"
+    echo "${dataset}__ci_pr_${PR_NUMBER}"
 }
 
 warn() {
