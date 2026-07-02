@@ -1,4 +1,7 @@
 import time
+import json
+
+from datetime import datetime
 
 from google.cloud import dataform_v1beta1
 
@@ -158,12 +161,39 @@ class DataformClient:
 
             time.sleep(poll_interval)
 
+    def _calculate_duration_seconds(
+        self,
+        invocation_timing,
+    ) -> float | None:
+
+        if (
+            not invocation_timing
+            or not invocation_timing.start_time
+            or not invocation_timing.end_time
+        ):
+            return None
+
+        start = invocation_timing.start_time.timestamp()
+        end = invocation_timing.end_time.timestamp()
+
+        return round(end - start, 2)
+
+    def _to_datetime(self, timestamp) -> datetime | None:
+        """
+        Converts a protobuf Timestamp into datetime.
+        """
+
+        if not timestamp:
+            return None
+
+        return timestamp.ToDatetime()
+    
     def list_workflow_actions(
         self,
         workflow_invocation_name: str,
     ) -> list[WorkflowAction]:
         """
-        Returns all actions executed by a Workflow Invocation.
+        Returns all executed Dataform actions.
         """
 
         actions: list[WorkflowAction] = []
@@ -175,9 +205,39 @@ class DataformClient:
         )
 
         for action in pager:
-            print("=" * 80)
-            print(action)
-            print("=" * 80)
-            break
 
-        return []
+            metadata = {}
+
+            if action.internal_metadata:
+                metadata = json.loads(action.internal_metadata)
+
+            action_type = (
+                metadata.get("labels", {})
+                .get("dataform-action-type", "unknown")
+            )
+
+            target = action.canonical_target or action.target
+
+            actions.append(
+                WorkflowAction(
+                    target=Target(
+                        database=target.database,
+                        schema=target.schema,
+                        name=target.name,
+                    ),
+                    state=action.state.name,
+                    action_type=action_type,
+                    start_time=self._to_datetime(
+                        action.invocation_timing.start_time,
+                    ),
+                    end_time=self._to_datetime(
+                        action.invocation_timing.end_time,
+                    ),
+                    duration_seconds=self._calculate_duration_seconds(
+                        action.invocation_timing,
+                    ),
+                    failure_reason=None,
+                )
+            )
+
+        return actions

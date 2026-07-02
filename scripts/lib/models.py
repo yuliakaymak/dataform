@@ -43,11 +43,9 @@ class WorkflowAction:
     target: Target
     state: str
     action_type: str
+
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+
+    duration_seconds: float | None = None
     failure_reason: str | None = None
-
-
-@dataclass(frozen=True)
-class AssertionResult:
-    name: str
-    status: str
-    row_count: int
