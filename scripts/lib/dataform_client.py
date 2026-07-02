@@ -96,3 +96,26 @@ class DataformClient:
                 None,
             ),
         )
+    
+    def get_workflow_invocation(
+        self,
+        workflow_invocation_name: str,
+    ) -> WorkflowInvocation:
+        """
+        Returns the latest Workflow Invocation state.
+        """
+
+        response = self.client.get_workflow_invocation(
+            name=workflow_invocation_name,
+        )
+
+        return WorkflowInvocation(
+            name=response.name,
+            state=response.state.name,
+            compilation_result=response.compilation_result,
+            invocation_time=getattr(
+                response,
+                "invocation_time",
+                None,
+            ),
+        )
