@@ -137,6 +137,7 @@ class DataformClient:
         """
 
         start_time = time.time()
+        previous_state = None
 
         while True:
 
@@ -144,7 +145,9 @@ class DataformClient:
                 workflow_invocation_name,
             )
 
-            print(f"Current state: {invocation.state}")
+            if invocation.state != previous_state:
+                print(f"Current state: {invocation.state}")
+                previous_state = invocation.state
 
             if invocation.state in (
                 "SUCCEEDED",

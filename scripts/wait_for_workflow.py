@@ -8,7 +8,7 @@ def main() -> None:
 
     config = Config.from_file()
 
-    compilation_result = os.environ["COMPILATION_RESULT"]
+    workflow_invocation = os.environ["WORKFLOW_INVOCATION"]
 
     client = DataformClient(
         project_id=config.project_id,
@@ -16,13 +16,16 @@ def main() -> None:
         repository_id=config.dataform_repository,
     )
 
-    result = client.create_workflow_invocation(
-        compilation_result_name=compilation_result,
+    print()
+    print("Waiting for workflow completion...")
+
+    result = client.wait_for_workflow(
+        workflow_invocation_name=workflow_invocation,
     )
 
     print()
-    print("Workflow Invocation created successfully.")
-    print(result.name)
+    print("Workflow finished.")
+    print(f"State: {result.state}")
 
     github_output = os.getenv("GITHUB_OUTPUT")
 
@@ -33,7 +36,7 @@ def main() -> None:
             encoding="utf-8",
         ) as file:
             file.write(
-                f"workflow_invocation={result.name}\n"
+                f"workflow_state={result.state}\n"
             )
 
 

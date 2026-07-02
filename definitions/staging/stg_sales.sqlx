@@ -8,5 +8,5 @@ config {
     }
 }
 
-select *, unknown_column
+select *
 from ${ref("sales")}

@@ -134,6 +134,13 @@ jobs:
         run: |
           python scripts/create_workflow_invocation.py
 
+      - name: Wait for Workflow Completion
+        id: wait
+        env:
+          WORKFLOW_INVOCATION: ${{ steps.workflow.outputs.workflow_invocation }}
+        run: |
+          python scripts/wait_for_workflow.py
+
       - name: List Workflow Actions
         env:
           WORKFLOW_INVOCATION: ${{ steps.workflow.outputs.workflow_invocation }}
