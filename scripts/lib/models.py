@@ -49,3 +49,9 @@ class WorkflowAction:
 
     duration_seconds: float | None = None
     failure_reason: str | None = None
+
+@dataclass(frozen=True)
+class AssertionResult:
+    name: str
+    status: str
+    row_count: int
