@@ -72,6 +72,11 @@ class WorkflowActionMapper:
             or action.target
         )
 
+        print(
+            target.name,
+            action.state.name,
+        )
+
         return WorkflowAction(
             target=Target(
                 database=target.database,
