@@ -34,6 +34,9 @@ class ConsoleFormatter:
         self._print_assertions(report)
         self._print_summary(report)
 
+        if report.has_failures:
+            self._print_errors(report)
+
     def _print_models(
         self,
         report: BuildReport,
@@ -156,6 +159,49 @@ class ConsoleFormatter:
         )
 
         print()
+
+    def _print_errors(
+        self,
+        report: BuildReport,
+    ) -> None:
+        """
+        Prints failed workflow actions.
+        """
+
+        print("─" * self.HEADER_WIDTH)
+        print("Errors")
+        print("─" * self.HEADER_WIDTH)
+        print()
+
+        for index, action in enumerate(report.failed_actions):
+
+            display_name = (
+                f"{action.target.schema}."
+                f"{action.target.name}"
+            )
+
+            if action.is_model:
+                display_name += (
+                    f" ({action.action_type})"
+                )
+
+            print(
+                f"{self._format_time(action)}  "
+                f"{self._format_status(action)}  "
+                f"{display_name}"
+            )
+
+            print()
+
+            print(
+                action.failure_reason
+                or "No failure reason was provided."
+            )
+
+            if index < len(report.failed_actions) - 1:
+                print()
+                print("-" * self.HEADER_WIDTH)
+                print()
 
     def _print_action(
         self,

@@ -97,3 +97,19 @@ class BuildReport:
             ).total_seconds(),
             2,
         )
+    @property
+    def failed_actions(self) -> list[WorkflowAction]:
+        """
+        Returns all failed workflow actions.
+        """
+
+        return [
+            action
+            for action in self.actions
+            if action.state == "FAILED"
+        ]
+
+
+    @property
+    def has_failures(self) -> bool:
+        return bool(self.failed_actions)
