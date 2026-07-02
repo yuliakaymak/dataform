@@ -1,6 +1,7 @@
 from .config import Config
 from .graph_parser import GraphParser
 from .dataform_client import DataformClient
+from .mappers import WorkflowActionMapper
 
 from .models import (
     AssertionResult,
@@ -19,4 +20,5 @@ __all__ = [
     "WorkflowAction",
     "Target",
     "AssertionResult",
+    "WorkflowActionMapper",
 ]
