@@ -175,24 +175,9 @@ class DataformClient:
         )
 
         for action in pager:
+            print("=" * 80)
+            print(action)
+            print("=" * 80)
+            break
 
-            target = action.target
-
-            actions.append(
-                WorkflowAction(
-                    target=Target(
-                        database=target.database,
-                        schema=target.schema,
-                        name=target.name,
-                    ),
-                    state=action.state.name,
-                    action_type=action.type_.name,
-                    failure_reason=getattr(
-                        action,
-                        "failure_reason",
-                        None,
-                    ),
-                )
-            )
-
-        return actions
+        return []
