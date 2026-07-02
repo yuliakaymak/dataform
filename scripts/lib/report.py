@@ -113,3 +113,18 @@ class BuildReport:
     @property
     def has_failures(self) -> bool:
         return bool(self.failed_actions)
+    
+    @property
+    def skipped_models(self) -> int:
+        return sum(
+            action.state == "SKIPPED"
+            for action in self.models
+        )
+
+
+    @property
+    def skipped_assertions(self) -> int:
+        return sum(
+            action.state == "SKIPPED"
+            for action in self.assertions
+        )

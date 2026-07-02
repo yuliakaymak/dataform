@@ -18,6 +18,7 @@ class ConsoleFormatter:
         "FAILED": "[FAIL]",
         "RUNNING": "[RUN ]",
         "CANCELLED": "[SKIP]",
+        "SKIPPED": "[SKIP]",
     }
 
     def print_build_report(
@@ -120,7 +121,7 @@ class ConsoleFormatter:
         print()
 
         print(
-            f"{'Models executed':<18}: "
+            f"{'Models total':<18}: "
             f"{report.model_count}"
         )
 
@@ -134,10 +135,15 @@ class ConsoleFormatter:
             f"{report.failed_models}"
         )
 
+        print(
+            f"{'Skipped':<18}: "
+            f"{report.skipped_models}"
+        )
+
         print()
 
         print(
-            f"{'Assertions':<18}: "
+            f"{'Assertions total':<18}: "
             f"{report.assertion_count}"
         )
 
@@ -149,6 +155,11 @@ class ConsoleFormatter:
         print(
             f"{'Failed':<18}: "
             f"{report.failed_assertions}"
+        )
+
+        print(
+            f"{'Skipped':<18}: "
+            f"{report.skipped_assertions}"
         )
 
         print()
