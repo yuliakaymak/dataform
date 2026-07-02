@@ -23,7 +23,22 @@ def main():
     print()
     print("Workflow Invocation created successfully.")
     print(result.name)
+
+    print()
+    print("Waiting for completion...")
+
+    result = client.wait_for_workflow(
+        result.name,
+    )
+
+    print()
+    print("Workflow finished.")
     print(result.state)
+
+    if result.state != "SUCCEEDED":
+        raise RuntimeError(
+            f"Workflow failed with state {result.state}"
+        )
 
 
 if __name__ == "__main__":
