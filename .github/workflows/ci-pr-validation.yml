@@ -139,3 +139,4 @@ jobs:
           WORKFLOW_INVOCATION: ${{ steps.workflow.outputs.workflow_invocation }}
         run: |
           python scripts/list_workflow_actions.py
+      
