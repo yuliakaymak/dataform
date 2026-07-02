@@ -1,3 +1,5 @@
+import time
+
 from google.cloud import dataform_v1beta1
 
 from .models import (
@@ -119,3 +121,37 @@ class DataformClient:
                 None,
             ),
         )
+    
+    def wait_for_workflow(
+        self,
+        workflow_invocation_name: str,
+        poll_interval: int = 5,
+        timeout: int = 600,
+    ) -> WorkflowInvocation:
+        """
+        Waits until the Workflow Invocation finishes.
+        """
+
+        start_time = time.time()
+
+        while True:
+
+            invocation = self.get_workflow_invocation(
+                workflow_invocation_name,
+            )
+
+            print(f"Current state: {invocation.state}")
+
+            if invocation.state in (
+                "SUCCEEDED",
+                "FAILED",
+                "CANCELLED",
+            ):
+                return invocation
+
+            if time.time() - start_time > timeout:
+                raise TimeoutError(
+                    "Workflow Invocation timed out."
+                )
+
+            time.sleep(poll_interval)
