@@ -4,6 +4,8 @@ from google.cloud import dataform_v1beta1
 
 from .models import (
     CompilationResult,
+    Target,
+    WorkflowAction,
     WorkflowInvocation,
 )
 
@@ -155,3 +157,42 @@ class DataformClient:
                 )
 
             time.sleep(poll_interval)
+
+    def list_workflow_actions(
+        self,
+        workflow_invocation_name: str,
+    ) -> list[WorkflowAction]:
+        """
+        Returns all actions executed by a Workflow Invocation.
+        """
+
+        actions: list[WorkflowAction] = []
+
+        pager = self.client.query_workflow_invocation_actions(
+            request={
+                "name": workflow_invocation_name,
+            }
+        )
+
+        for action in pager:
+
+            target = action.target
+
+            actions.append(
+                WorkflowAction(
+                    target=Target(
+                        database=target.database,
+                        schema=target.schema,
+                        name=target.name,
+                    ),
+                    state=action.state.name,
+                    action_type=action.type_.name,
+                    failure_reason=getattr(
+                        action,
+                        "failure_reason",
+                        None,
+                    ),
+                )
+            )
+
+        return actions

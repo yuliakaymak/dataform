@@ -128,7 +128,14 @@ jobs:
           python scripts/create_compilation_result.py
 
       - name: Create Workflow Invocation
+        id: workflow
         env:
           COMPILATION_RESULT: ${{ steps.compilation.outputs.compilation_result }}
         run: |
           python scripts/create_workflow_invocation.py
+
+      - name: List Workflow Actions
+        env:
+          WORKFLOW_INVOCATION: ${{ steps.workflow.outputs.workflow_invocation }}
+        run: |
+          python scripts/list_workflow_actions.py

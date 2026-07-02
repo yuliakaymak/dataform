@@ -6,6 +6,7 @@ from .models import (
     AssertionResult,
     CompilationResult,
     Target,
+    WorkflowAction,
     WorkflowInvocation,
 )
 
@@ -15,6 +16,7 @@ __all__ = [
     "DataformClient",
     "CompilationResult",
     "WorkflowInvocation",
+    "WorkflowAction",
     "Target",
     "AssertionResult",
 ]

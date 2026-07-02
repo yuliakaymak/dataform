@@ -35,6 +35,18 @@ class WorkflowInvocation:
 
 
 @dataclass(frozen=True)
+class WorkflowAction:
+    """
+    Represents one executed Dataform action.
+    """
+
+    target: Target
+    state: str
+    action_type: str
+    failure_reason: str | None = None
+
+
+@dataclass(frozen=True)
 class AssertionResult:
     name: str
     status: str

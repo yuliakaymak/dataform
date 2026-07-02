@@ -1,0 +1,1 @@
+formatter.print_actions(actions)
