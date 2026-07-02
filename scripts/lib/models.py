@@ -55,3 +55,16 @@ class AssertionResult:
     name: str
     status: str
     row_count: int
+
+@property
+def is_model(self) -> bool:
+    return self.action_type in {
+        "view",
+        "table",
+        "incremental",
+    }
+
+
+@property
+def is_assertion(self) -> bool:
+    return self.action_type == "assertion"
