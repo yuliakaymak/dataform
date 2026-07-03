@@ -1,0 +1,155 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Dataform Project
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dataform CLI
+        run: |
+          source scripts/common.sh
+          VERSION=$(get_dataform_version)
+
+          echo "Installing Dataform CLI ${VERSION}"
+
+          npm install -g @dataform/cli@"${VERSION}"
+          
+      - name: Display tool versions
+        run: |
+          node --version
+          npm --version
+          dataform --version
+
+      - name: Compile Dataform project
+        run: |
+          echo "Compiling Dataform project..."
+          mkdir -p artifacts
+          dataform compile --json > artifacts/graph.json
+          echo "Compilation completed successfully."
+
+      - name: Verify graph.json
+        run: |
+          ls -lah artifacts
+          wc -c artifacts/graph.json
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-validation-artifacts
+          path: artifacts/
+
+      - name: Verify Dataform graph
+        run: |
+          python scripts/lib/graph_parser.py --summary
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Verify authentication
+        run: |
+          gcloud auth list
+          gcloud config list project
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify BigQuery access
+        run: |
+          echo "Datasets in project:"
+          bq ls
+
+      - name: Verify IAM identity
+        run: |
+          gcloud auth list
+          gcloud projects describe my-project-19032025 --format="value(projectNumber)"
+
+      - name: Create CI datasets
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          bash scripts/create_datasets.sh
+
+      - name: Display CI configuration
+        run: |
+          python -c "
+          from scripts.lib import Config
+
+          config = Config.from_file()
+
+          print('Project    :', config.project_id)
+          print('Region     :', config.dataform_region)
+          print('Repository :', config.dataform_repository)
+          "
+
+      - name: Create Compilation Result
+        id: compilation
+        env:
+          GIT_COMMITISH: ${{ github.event.pull_request.head.sha }}
+          SCHEMA_SUFFIX: _ci_pr_${{ github.event.pull_request.number }}
+        run: |
+          python scripts/create_compilation_result.py
+
+      - name: Create Workflow Invocation
+        id: workflow
+        env:
+          COMPILATION_RESULT: ${{ steps.compilation.outputs.compilation_result }}
+        run: |
+          python scripts/create_workflow_invocation.py
+
+      - name: List Workflow Actions
+        env:
+          WORKFLOW_INVOCATION: ${{ steps.workflow.outputs.workflow_invocation }}
+        run: |
+          python scripts/list_workflow_actions.py
+
+      - name: Evaluate Workflow Result
+        env:
+          WORKFLOW_INVOCATION: ${{ steps.workflow.outputs.workflow_invocation }}
+        run: |
+          python scripts/evaluate_workflow_result.py
+
+      - name: Drop CI datasets
+        if: always()
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          bash scripts/drop_datasets.sh
+      
