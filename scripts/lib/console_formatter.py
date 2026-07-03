@@ -24,6 +24,8 @@ class ConsoleFormatter:
     def print_build_report(
         self,
         report: BuildReport,
+        include_models: bool = True,
+        include_assertions: bool = True,
     ) -> None:
 
         print("─" * self.HEADER_WIDTH)
@@ -31,8 +33,12 @@ class ConsoleFormatter:
         print("─" * self.HEADER_WIDTH)
         print()
 
-        self._print_models(report)
-        self._print_assertions(report)
+        if include_models:
+            self._print_models(report)
+
+        if include_assertions:
+            self._print_assertions(report)
+
         self._print_summary(report)
 
         if report.has_failures:
@@ -72,6 +78,25 @@ class ConsoleFormatter:
             )
 
         print()
+
+    def print_model(
+        self,
+        action: WorkflowAction,
+    ) -> None:
+        """
+        Prints one executed model.
+        """
+
+        display_name = (
+            f"{action.target.schema}."
+            f"{action.target.name}"
+            f" ({action.action_type})"
+        )
+
+        self._print_action(
+            action=action,
+            display_name=display_name,
+        )
 
     def _print_assertions(
         self,
@@ -227,7 +252,8 @@ class ConsoleFormatter:
             f"{self._format_time(action)}  "
             f"{self._format_status(action)}  "
             f"{display_name:<{self.NAME_WIDTH}}"
-            f"{self._format_duration(action):>8}"
+            f"{self._format_duration(action):>8}",
+            flush=True,
         )
 
     def _format_time(
