@@ -8,5 +8,5 @@ config {
     }
 }
 
-select *, unknown_field
+select *
 from ${ref("sku")}
