@@ -1,6 +1,8 @@
 import os
 import time
 
+from dataclasses import replace
+
 from lib import (
     BuildReport,
     Config,
@@ -13,6 +15,17 @@ TERMINAL_STATES = {
     "SUCCEEDED",
     "FAILED",
     "CANCELLED",
+}
+
+FINAL_ACTION_STATES = {
+    "SUCCEEDED",
+    "FAILED",
+}
+
+SKIPPED_ACTION_STATES = {
+    "CANCELLED",
+    "DISABLED",
+    "SKIPPED",
 }
 
 
@@ -37,6 +50,41 @@ def _sort_by_start_time(actions):
     )
 
 
+def _is_started_or_finished(action):
+    if not (
+        action.is_model
+        or action.is_assertion
+    ):
+        return False
+
+    return (
+        action.start_time is not None
+        or action.state in SKIPPED_ACTION_STATES
+        or action.state in FINAL_ACTION_STATES
+    )
+
+
+def _running_action(action):
+    return replace(
+        action,
+        state="RUNNING",
+        end_time=None,
+        duration_seconds=None,
+    )
+
+
+def _print_action(
+    formatter,
+    action,
+) -> None:
+
+    if action.is_model:
+        formatter.print_model(action)
+        return
+
+    formatter.print_assertion(action)
+
+
 def main():
 
     config = Config.from_file()
@@ -51,15 +99,16 @@ def main():
     )
 
     formatter = ConsoleFormatter()
-    printed_models = set()
+    completed_actions = set()
+    active_action_key = None
+    active_action_started = False
     start_time = time.time()
     actions = []
     previous_state = None
+    assertions_header_printed = False
 
-    print()
-    print("=" * formatter.SECTION_WIDTH)
-    print("Models")
-    print("=" * formatter.SECTION_WIDTH)
+    formatter.print_header()
+    formatter.print_section_header("Models")
 
     while True:
 
@@ -75,22 +124,74 @@ def main():
             workflow_invocation_name=workflow_invocation,
         )
 
-        started_models = [
-            action
-            for action in actions
-            if action.is_model and action.start_time is not None
-        ]
+        while True:
+            active_action = None
 
-        for action in _sort_by_start_time(started_models):
-            action_key = _action_key(action)
+            if active_action_key is not None:
+                active_action = next(
+                    (
+                        action
+                        for action in actions
+                        if _action_key(action) == active_action_key
+                    ),
+                    None,
+                )
 
-            if action_key in printed_models:
+            if active_action is None:
+                candidates = [
+                    action
+                    for action in actions
+                    if (
+                        _action_key(action) not in completed_actions
+                        and _is_started_or_finished(action)
+                    )
+                ]
+
+                if not candidates:
+                    break
+
+                active_action = _sort_by_start_time(candidates)[0]
+                active_action_key = _action_key(active_action)
+                active_action_started = False
+
+            if active_action.is_assertion and not assertions_header_printed:
+                print()
+                formatter.print_section_header("Assertions")
+                assertions_header_printed = True
+
+            if active_action.state in SKIPPED_ACTION_STATES:
+                _print_action(
+                    formatter,
+                    active_action,
+                )
+                completed_actions.add(active_action_key)
+                active_action_key = None
+                active_action_started = False
                 continue
 
-            formatter.print_model(action)
-            printed_models.add(action_key)
+            if not active_action_started:
+                _print_action(
+                    formatter,
+                    _running_action(active_action),
+                )
+                active_action_started = True
 
-        if invocation.state in TERMINAL_STATES:
+            if active_action.state in FINAL_ACTION_STATES:
+                _print_action(
+                    formatter,
+                    active_action,
+                )
+                completed_actions.add(active_action_key)
+                active_action_key = None
+                active_action_started = False
+                continue
+
+            break
+
+        if (
+            invocation.state in TERMINAL_STATES
+            and active_action_key is None
+        ):
             break
 
         if time.time() - start_time > timeout:
@@ -106,9 +207,13 @@ def main():
 
     report = BuildReport(actions=actions)
 
+    print()
+
     formatter.print_build_report(
         report,
         include_models=False,
+        include_assertions=False,
+        include_header=False,
     )
 
 

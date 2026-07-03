@@ -16,8 +16,10 @@ class ConsoleFormatter:
     STATUS = {
         "SUCCEEDED": "[ OK ]",
         "FAILED": "[FAIL]",
+        "PENDING": "[RUN ]",
         "RUNNING": "[RUN ]",
         "CANCELLED": "[SKIP]",
+        "DISABLED": "[SKIP]",
         "SKIPPED": "[SKIP]",
     }
 
@@ -26,12 +28,11 @@ class ConsoleFormatter:
         report: BuildReport,
         include_models: bool = True,
         include_assertions: bool = True,
+        include_header: bool = True,
     ) -> None:
 
-        print("─" * self.HEADER_WIDTH)
-        print("Dataform Build")
-        print("─" * self.HEADER_WIDTH)
-        print()
+        if include_header:
+            self.print_header()
 
         if include_models:
             self._print_models(report)
@@ -44,6 +45,20 @@ class ConsoleFormatter:
         if report.has_failures:
             self._print_errors(report)
 
+    def print_header(self) -> None:
+        print("─" * self.HEADER_WIDTH)
+        print("Dataform Build")
+        print("─" * self.HEADER_WIDTH)
+        print()
+
+    def print_section_header(
+        self,
+        title: str,
+    ) -> None:
+        print("=" * self.SECTION_WIDTH)
+        print(title)
+        print("=" * self.SECTION_WIDTH)
+
     def _print_models(
         self,
         report: BuildReport,
@@ -52,9 +67,7 @@ class ConsoleFormatter:
         Prints executed models.
         """
 
-        print("=" * self.SECTION_WIDTH)
-        print("Models")
-        print("=" * self.SECTION_WIDTH)
+        self.print_section_header("Models")
 
         models = sorted(
             report.models,
@@ -98,6 +111,24 @@ class ConsoleFormatter:
             display_name=display_name,
         )
 
+    def print_assertion(
+        self,
+        action: WorkflowAction,
+    ) -> None:
+        """
+        Prints one executed assertion.
+        """
+
+        display_name = (
+            f"{action.target.schema}."
+            f"{action.target.name}"
+        )
+
+        self._print_action(
+            action=action,
+            display_name=display_name,
+        )
+
     def _print_assertions(
         self,
         report: BuildReport,
@@ -106,9 +137,7 @@ class ConsoleFormatter:
         Prints executed assertions.
         """
 
-        print("=" * self.SECTION_WIDTH)
-        print("Assertions")
-        print("=" * self.SECTION_WIDTH)
+        self.print_section_header("Assertions")
 
         assertions = sorted(
             report.assertions,
@@ -188,6 +217,7 @@ class ConsoleFormatter:
         )
 
         print()
+        print()
 
         print(
             f"{'Elapsed time':<18}: "
@@ -252,7 +282,7 @@ class ConsoleFormatter:
             f"{self._format_time(action)}  "
             f"{self._format_status(action)}  "
             f"{display_name:<{self.NAME_WIDTH}}"
-            f"{self._format_duration(action):>8}",
+            f"{self._format_duration(action)}",
             flush=True,
         )
 
@@ -281,7 +311,13 @@ class ConsoleFormatter:
         action: WorkflowAction,
     ) -> str:
 
-        if action.duration_seconds is None:
-            return "-"
+        if action.state not in {
+            "SUCCEEDED",
+            "FAILED",
+        }:
+            return ""
 
-        return f"{action.duration_seconds:.2f}s"
+        if action.duration_seconds is None:
+            return f"{'-':>8}"
+
+        return f"{action.duration_seconds:.2f}s".rjust(8)

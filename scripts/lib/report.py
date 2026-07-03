@@ -75,15 +75,17 @@ class BuildReport:
     @property
     def elapsed_time(self) -> float:
 
+        actions = self.models + self.assertions
+
         started = [
             action.start_time
-            for action in self.actions
+            for action in actions
             if action.start_time is not None
         ]
 
         finished = [
             action.end_time
-            for action in self.actions
+            for action in actions
             if action.end_time is not None
         ]
 

@@ -18,6 +18,12 @@ class WorkflowActionMapper:
         if timestamp is None:
             return None
 
+        if (
+            getattr(timestamp, "seconds", 0) == 0
+            and getattr(timestamp, "nanos", 0) == 0
+        ):
+            return None
+
         return timestamp.ToDatetime()
 
     @classmethod
@@ -48,6 +54,39 @@ class WorkflowActionMapper:
             (end - start).total_seconds(),
             2,
         )
+
+    @staticmethod
+    def _extract_failure_reason(
+        action,
+        metadata: dict,
+    ) -> str | None:
+
+        for field_name in (
+            "failure_reason",
+            "failureReason",
+        ):
+            value = getattr(
+                action,
+                field_name,
+                None,
+            )
+
+            if value:
+                return str(value)
+
+        for field_name in (
+            "failureReason",
+            "failure_reason",
+            "errorMessage",
+            "error_message",
+            "error",
+        ):
+            value = metadata.get(field_name)
+
+            if value:
+                return str(value)
+
+        return None
 
     @classmethod
     def from_api(cls, action) -> WorkflowAction:
@@ -89,5 +128,8 @@ class WorkflowActionMapper:
             duration_seconds=cls._calculate_duration_seconds(
                 action.invocation_timing
             ),
-            failure_reason=None,
+            failure_reason=cls._extract_failure_reason(
+                action,
+                metadata,
+            ),
         )
