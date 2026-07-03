@@ -8,5 +8,5 @@ config {
     }
 }
 
-select *, unknown_key
+select *
 from ${ref("cities")}
