@@ -145,4 +145,11 @@ jobs:
           WORKFLOW_INVOCATION: ${{ steps.workflow.outputs.workflow_invocation }}
         run: |
           python scripts/evaluate_workflow_result.py
+
+      - name: Drop CI datasets
+        if: always()
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          bash scripts/drop_datasets.sh
       
