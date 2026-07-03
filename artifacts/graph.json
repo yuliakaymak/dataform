@@ -1,0 +1,1844 @@
+{
+    "tables": [
+        {
+            "type": "view",
+            "target": {
+                "schema": "analytics",
+                "name": "sales_performance_by_countries",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nselect \n    date_trunc(sales_date, month) as calend_month\n    , region_name\n    , country_name\n    , is_key_country\n    , sum(regular_price_usd) as regular_price_usd\n    , sum(discounted_price_usd) as discounted_price_usd\nfrom `my-project-19032025.marts.sales_enriched`\ngroup by all ",
+            "disabled": false,
+            "fileName": "definitions\\analytics\\sales_performance\\sales_performance_by_countries.sqlx",
+            "tags": [
+                "analytics",
+                "sales_performance"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "marts",
+                    "name": "sales_enriched",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "analytics",
+                "name": "sales_performance_by_countries",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "marts",
+                "name": "geo_locations",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nwith locations as (\n    select *\n    from `my-project-19032025.staging.stg_locations`\n)\n, join_cities as (\n    select \n        locations.*\n        , c.city_name\n        , c.country_id\n    from locations\n    left join `my-project-19032025.staging.stg_cities` as c using (city_id)\n)\n, join_countries as (\n    select \n        join_cities.*\n        , c.country_code\n        , c.country_name\n        , c.region_code\n    from join_cities\n    left join `my-project-19032025.staging.stg_countries_latest` as c using (country_id)\n)\n, join_regions as (\n    select \n        join_countries.*\n        , r.region_name\n    from join_countries\n    left join `my-project-19032025.staging.stg_regions_latest` as r using (region_code)\n)\nselect *\nfrom join_regions    ",
+            "disabled": false,
+            "fileName": "definitions\\marts\\geo_locations.sqlx",
+            "tags": [
+                "marts",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_locations",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_cities",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_countries_latest",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_regions_latest",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "marts",
+                "name": "geo_locations",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "marts",
+                "name": "geo_locations_enriched",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\n\n\n\nselect \n    *\n    , \n    CASE \n        WHEN country_code IN ('DE', 'BY', 'UK') \n        THEN 1 \n        ELSE 0 END AS is_key_country\n           \nfrom `my-project-19032025.marts.geo_locations`\n",
+            "disabled": false,
+            "fileName": "definitions\\marts\\geo_locations_enriched.sqlx",
+            "tags": [
+                "marts",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "marts",
+                    "name": "geo_locations",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "marts",
+                "name": "geo_locations_enriched",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "marts",
+                "name": "sales_enriched",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\n\nwith sales as (\n    select *\n    from `my-project-19032025.staging.stg_sales`\n)\n, join_prices_and_discounts as (\n    select\n        sales.*\n        , p.regular_price_usd\n        , d.discount\n        , p.regular_price_usd * (1 - d.discount) as discounted_price_usd\n    from sales\n    left join `my-project-19032025.staging.stg_prices` as p on sales.sku_id = p.sku_id and sales.sales_date between p._row_valid_from and p._row_valid_to\n    left join `my-project-19032025.staging.stg_discounts` as d on sales.sku_id = d.sku_id and sales.sales_date between d._row_valid_from and d._row_valid_to\n)\n, join_sku as (\n    select \n        a.*\n        , s.sku_name\n        , s.sku_category\n        , s.sku_price_segment\n    from join_prices_and_discounts as a\n    left join `my-project-19032025.staging.stg_sku` as s using (sku_id)\n)\n, join_locations as (\n    select\n        a.*\n        , g.city_name\n        , g.country_name\n        , g.region_name\n        , g.is_key_country\n    from join_sku as a\n    left join `my-project-19032025.marts.geo_locations_enriched` as g using (location_id)\n)\nselect *\nfrom join_locations\n",
+            "disabled": false,
+            "fileName": "definitions\\marts\\sales_enriched.sqlx",
+            "tags": [
+                "marts",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_sales",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_prices",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_discounts",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_sku",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "marts",
+                    "name": "geo_locations_enriched",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "marts",
+                "name": "sales_enriched",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_cities",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nselect *\nfrom `my-project-19032025.raw.cities`\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_cities.sqlx",
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "raw",
+                    "name": "cities",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_cities",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_countries",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nwith raw_data as (\n    select *\n    from `my-project-19032025.raw.countries`\n)\n, add_scd as (\n    \n        select\n            *,\n            changed_at as _row_valid_from,\n            coalesce(lead(changed_at) over (partition by country_id order by changed_at), date('4999-12-31')) as _row_valid_to,\n            case when lead(changed_at) over (partition by country_id order by changed_at) is null then 1 else 0 end as _is_active\n        from raw_data  \n  \n)\nselect *\nfrom add_scd\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_countries.sqlx",
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "raw",
+                    "name": "countries",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_countries",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_countries_latest",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nselect *\nfrom `my-project-19032025.staging.stg_countries`\nwhere _is_active = 1\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_countries_latest.sqlx",
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_countries",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_countries_latest",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_discounts",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nwith raw_data as (\n    select *\n    from `my-project-19032025.raw.discounts`\n)\n, add_scd as (\n    \n        select\n            *,\n            changed_at as _row_valid_from,\n            coalesce(lead(changed_at) over (partition by sku_id order by changed_at), date('4999-12-31')) as _row_valid_to,\n            case when lead(changed_at) over (partition by sku_id order by changed_at) is null then 1 else 0 end as _is_active\n        from raw_data  \n  \n)\nselect * \nfrom add_scd\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_discounts.sqlx",
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "raw",
+                    "name": "discounts",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_discounts",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_discounts_latest",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nselect *\nfrom `my-project-19032025.staging.stg_discounts`\nwhere _is_active = 1\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_discounts_latest.sqlx",
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_discounts",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_discounts_latest",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_employees",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nselect \n    *\n    , concat(first_name, \" \", last_name) as full_name\nfrom `my-project-19032025.raw.employees`\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_employees.sqlx",
+            "tags": [
+                "staging",
+                "staff"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "raw",
+                    "name": "employees",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_employees",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_locations",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nselect *\nfrom `my-project-19032025.raw.locations`\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_locations.sqlx",
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "raw",
+                    "name": "locations",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_locations",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_prices",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nwith raw_data as (\n    select *\n    from `my-project-19032025.raw.prices`\n)\n, add_scd as (\n    \n        select\n            *,\n            changed_at as _row_valid_from,\n            coalesce(lead(changed_at) over (partition by sku_id order by changed_at), date('4999-12-31')) as _row_valid_to,\n            case when lead(changed_at) over (partition by sku_id order by changed_at) is null then 1 else 0 end as _is_active\n        from raw_data  \n  \n)\nselect *\nfrom add_scd\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_prices.sqlx",
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "raw",
+                    "name": "prices",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_prices",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_prices_latest",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nselect *\nfrom `my-project-19032025.staging.stg_prices`\nwhere _is_active = 1\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_prices_latest.sqlx",
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_prices",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_prices_latest",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_regions",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nwith raw_data as (\n    select *\n    from `my-project-19032025.raw.regions`\n)\n, add_scd as (\n    \n        select\n            *,\n            changed_at as _row_valid_from,\n            coalesce(lead(changed_at) over (partition by region_code order by changed_at), date('4999-12-31')) as _row_valid_to,\n            case when lead(changed_at) over (partition by region_code order by changed_at) is null then 1 else 0 end as _is_active\n        from raw_data  \n  \n)\nselect *\nfrom add_scd\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_regions.sqlx",
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "raw",
+                    "name": "regions",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_regions",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_regions_latest",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nselect *\nfrom `my-project-19032025.staging.stg_regions`\nwhere _is_active = 1\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_regions_latest.sqlx",
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_regions",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_regions_latest",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_sales",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nselect *\nfrom `my-project-19032025.raw.fact_sales`\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_sales.sqlx",
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "raw",
+                    "name": "fact_sales",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_sales",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        },
+        {
+            "type": "view",
+            "target": {
+                "schema": "staging",
+                "name": "stg_sku",
+                "database": "my-project-19032025"
+            },
+            "query": "\n\nselect *\nfrom `my-project-19032025.raw.sku`\n",
+            "disabled": false,
+            "fileName": "definitions\\staging\\stg_sku.sqlx",
+            "tags": [
+                "staging",
+                "products"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "raw",
+                    "name": "sku",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "staging",
+                "name": "stg_sku",
+                "database": "my-project-19032025"
+            },
+            "enumType": "VIEW"
+        }
+    ],
+    "assertions": [
+        {
+            "query": "\n\n\n    select\n    country_id as invalid_key\n    from `my-project-19032025.staging.stg_cities`\n    where country_id not in (\n      select country_id from `my-project-19032025.staging.stg_countries`\n    )\n  ",
+            "fileName": "definitions\\assertions\\cities_countries_relationship.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "cities_countries_relationship",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "custom_assertions",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_cities",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_countries",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "cities_countries_relationship",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\n\n\n    select\n    region_code as invalid_key\n    from `my-project-19032025.staging.stg_countries`\n    where region_code not in (\n      select region_code from `my-project-19032025.staging.stg_regions`\n    )\n  ",
+            "fileName": "definitions\\assertions\\countries_regions_relationship.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "countries_regions_relationship",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "custom_assertions",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_countries",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_regions",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "countries_regions_relationship",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\n\n\n    select\n    sku_id as invalid_key\n    from `my-project-19032025.staging.stg_discounts`\n    where sku_id not in (\n      select sku_id from `my-project-19032025.staging.stg_sku`\n    )\n  ",
+            "fileName": "definitions\\assertions\\discounts_sku_relationship.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "discounts_sku_relationship",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "custom_assertions",
+                "sku"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_discounts",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_sku",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "discounts_sku_relationship",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\n\n\n    select\n    city_id as invalid_key\n    from `my-project-19032025.staging.stg_locations`\n    where city_id not in (\n      select city_id from `my-project-19032025.staging.stg_cities`\n    )\n  ",
+            "fileName": "definitions\\assertions\\locations_cities_relationship.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "locations_cities_relationship",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "custom_assertions",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_locations",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_cities",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "locations_cities_relationship",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\n\n\n    select\n    sku_id as invalid_key\n    from `my-project-19032025.staging.stg_prices`\n    where sku_id not in (\n      select sku_id from `my-project-19032025.staging.stg_sku`\n    )\n  ",
+            "fileName": "definitions\\assertions\\prices_sku_relationship.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "prices_sku_relationship",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "custom_assertions",
+                "sku"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_prices",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_sku",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "prices_sku_relationship",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\n\n\n    select\n    sales_repr_id as invalid_key\n    from `my-project-19032025.staging.stg_sales`\n    where sales_repr_id not in (\n      select sales_repr_id from `my-project-19032025.staging.stg_employees`\n    )\n  ",
+            "fileName": "definitions\\assertions\\sales_employees_relationship.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "sales_employees_relationship",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "custom_assertions",
+                "staff"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_sales",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_employees",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "sales_employees_relationship",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\n\n\n    select\n    location_id as invalid_key\n    from `my-project-19032025.staging.stg_sales`\n    where location_id not in (\n      select location_id from `my-project-19032025.staging.stg_locations`\n    )\n  ",
+            "fileName": "definitions\\assertions\\sales_locations_relationship.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "sales_locations_relationship",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "custom_assertions",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_sales",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_locations",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "sales_locations_relationship",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\n\n\n    select\n    sku_id as invalid_key\n    from `my-project-19032025.staging.stg_sales`\n    where sku_id not in (\n      select sku_id from `my-project-19032025.staging.stg_sku`\n    )\n  ",
+            "fileName": "definitions\\assertions\\sales_sku_relationship.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "sales_sku_relationship",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "custom_assertions",
+                "sku"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_sales",
+                    "database": "my-project-19032025"
+                },
+                {
+                    "schema": "staging",
+                    "name": "stg_sku",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "sales_sku_relationship",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    city_id,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_cities`\n  GROUP BY city_id\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_cities.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_cities_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_cities",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_cities_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_cities",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  'city_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_cities`\nWHERE NOT (city_id IS NOT NULL)\nUNION ALL\nSELECT\n  'country_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_cities`\nWHERE NOT (country_id IS NOT NULL)\n",
+            "fileName": "definitions\\staging\\stg_cities.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_cities_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_cities",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_cities_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_cities",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    country_id, changed_at,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_countries`\n  GROUP BY country_id, changed_at\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_countries.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_countries_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_countries",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_countries_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_countries",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  'changed_at <= current_date' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_countries`\nWHERE NOT (changed_at <= current_date)\nUNION ALL\nSELECT\n  'country_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_countries`\nWHERE NOT (country_id IS NOT NULL)\nUNION ALL\nSELECT\n  'country_code IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_countries`\nWHERE NOT (country_code IS NOT NULL)\nUNION ALL\nSELECT\n  'region_code IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_countries`\nWHERE NOT (region_code IS NOT NULL)\n",
+            "fileName": "definitions\\staging\\stg_countries.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_countries_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_countries",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_countries_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_countries",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    country_id,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_countries_latest`\n  GROUP BY country_id\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_countries_latest.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_countries_latest_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_countries_latest",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_countries_latest_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_countries_latest",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    sku_id, changed_at,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_discounts`\n  GROUP BY sku_id, changed_at\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_discounts.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_discounts_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_discounts",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_discounts_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_discounts",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  'discount between 0 and 1' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_discounts`\nWHERE NOT (discount between 0 and 1)\nUNION ALL\nSELECT\n  'changed_at <= current_date' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_discounts`\nWHERE NOT (changed_at <= current_date)\nUNION ALL\nSELECT\n  'sku_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_discounts`\nWHERE NOT (sku_id IS NOT NULL)\nUNION ALL\nSELECT\n  'discount IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_discounts`\nWHERE NOT (discount IS NOT NULL)\n",
+            "fileName": "definitions\\staging\\stg_discounts.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_discounts_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_discounts",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_discounts_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_discounts",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    sku_id,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_discounts_latest`\n  GROUP BY sku_id\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_discounts_latest.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_discounts_latest_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_discounts_latest",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_discounts_latest_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_discounts_latest",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    sales_repr_id,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_employees`\n  GROUP BY sales_repr_id\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_employees.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_employees_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "staff"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_employees",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_employees_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_employees",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  'sales_repr_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_employees`\nWHERE NOT (sales_repr_id IS NOT NULL)\nUNION ALL\nSELECT\n  'location_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_employees`\nWHERE NOT (location_id IS NOT NULL)\n",
+            "fileName": "definitions\\staging\\stg_employees.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_employees_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "staff"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_employees",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_employees_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_employees",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    location_id,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_locations`\n  GROUP BY location_id\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_locations.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_locations_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_locations",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_locations_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_locations",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  'location_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_locations`\nWHERE NOT (location_id IS NOT NULL)\nUNION ALL\nSELECT\n  'city_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_locations`\nWHERE NOT (city_id IS NOT NULL)\n",
+            "fileName": "definitions\\staging\\stg_locations.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_locations_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_locations",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_locations_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_locations",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    sku_id, changed_at,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_prices`\n  GROUP BY sku_id, changed_at\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_prices.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_prices_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_prices",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_prices_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_prices",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  'regular_price_usd > 0' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_prices`\nWHERE NOT (regular_price_usd > 0)\nUNION ALL\nSELECT\n  'sku_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_prices`\nWHERE NOT (sku_id IS NOT NULL)\nUNION ALL\nSELECT\n  'regular_price_usd IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_prices`\nWHERE NOT (regular_price_usd IS NOT NULL)\nUNION ALL\nSELECT\n  'changed_at IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_prices`\nWHERE NOT (changed_at IS NOT NULL)\n",
+            "fileName": "definitions\\staging\\stg_prices.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_prices_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_prices",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_prices_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_prices",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    sku_id,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_prices_latest`\n  GROUP BY sku_id\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_prices_latest.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_prices_latest_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_prices_latest",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_prices_latest_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_prices_latest",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    region_code, changed_at,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_regions`\n  GROUP BY region_code, changed_at\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_regions.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_regions_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_regions",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_regions_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_regions",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  'region_code IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_regions`\nWHERE NOT (region_code IS NOT NULL)\nUNION ALL\nSELECT\n  'region_name IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_regions`\nWHERE NOT (region_name IS NOT NULL)\n",
+            "fileName": "definitions\\staging\\stg_regions.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_regions_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_regions",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_regions_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_regions",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    region_code,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_regions_latest`\n  GROUP BY region_code\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_regions_latest.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_regions_latest_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "geo"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_regions_latest",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_regions_latest_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_regions_latest",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    id,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_sales`\n  GROUP BY id\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_sales.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_sales_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_sales",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_sales_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_sales",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  'id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_sales`\nWHERE NOT (id IS NOT NULL)\nUNION ALL\nSELECT\n  'sales_date IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_sales`\nWHERE NOT (sales_date IS NOT NULL)\nUNION ALL\nSELECT\n  'sku_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_sales`\nWHERE NOT (sku_id IS NOT NULL)\nUNION ALL\nSELECT\n  'location_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_sales`\nWHERE NOT (location_id IS NOT NULL)\nUNION ALL\nSELECT\n  'sales_repr_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_sales`\nWHERE NOT (sales_repr_id IS NOT NULL)\n",
+            "fileName": "definitions\\staging\\stg_sales.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_sales_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "sales"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_sales",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_sales_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_sales",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  *\nFROM (\n  SELECT\n    sku_id,\n    COUNT(1) AS index_row_count\n  FROM `my-project-19032025.staging.stg_sku`\n  GROUP BY sku_id\n  ) AS data\nWHERE index_row_count > 1\n",
+            "fileName": "definitions\\staging\\stg_sku.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_sku_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "products"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_sku",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_sku_assertions_uniqueKey_0",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_sku",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "query": "\nSELECT\n  'sku_id IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_sku`\nWHERE NOT (sku_id IS NOT NULL)\nUNION ALL\nSELECT\n  'sku_name IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_sku`\nWHERE NOT (sku_name IS NOT NULL)\nUNION ALL\nSELECT\n  'sku_category IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_sku`\nWHERE NOT (sku_category IS NOT NULL)\nUNION ALL\nSELECT\n  'sku_price_segment IS NOT NULL' AS failing_row_condition,\n  *\nFROM `my-project-19032025.staging.stg_sku`\nWHERE NOT (sku_price_segment IS NOT NULL)\n",
+            "fileName": "definitions\\staging\\stg_sku.sqlx",
+            "target": {
+                "schema": "assertions",
+                "name": "staging_stg_sku_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "tags": [
+                "staging",
+                "products"
+            ],
+            "dependencyTargets": [
+                {
+                    "schema": "staging",
+                    "name": "stg_sku",
+                    "database": "my-project-19032025"
+                }
+            ],
+            "canonicalTarget": {
+                "schema": "assertions",
+                "name": "staging_stg_sku_assertions_rowConditions",
+                "database": "my-project-19032025"
+            },
+            "parentAction": {
+                "schema": "staging",
+                "name": "stg_sku",
+                "database": "my-project-19032025"
+            }
+        }
+    ],
+    "projectConfig": {
+        "warehouse": "bigquery",
+        "defaultSchema": "dataform",
+        "assertionSchema": "assertions",
+        "defaultDatabase": "my-project-19032025"
+    },
+    "graphErrors": {},
+    "declarations": [
+        {
+            "target": {
+                "schema": "raw",
+                "name": "cities",
+                "database": "my-project-19032025"
+            },
+            "fileName": "definitions\\sources\\raw_dependencies.js",
+            "canonicalTarget": {
+                "schema": "raw",
+                "name": "cities",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "target": {
+                "schema": "raw",
+                "name": "countries",
+                "database": "my-project-19032025"
+            },
+            "fileName": "definitions\\sources\\raw_dependencies.js",
+            "canonicalTarget": {
+                "schema": "raw",
+                "name": "countries",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "target": {
+                "schema": "raw",
+                "name": "discounts",
+                "database": "my-project-19032025"
+            },
+            "fileName": "definitions\\sources\\raw_dependencies.js",
+            "canonicalTarget": {
+                "schema": "raw",
+                "name": "discounts",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "target": {
+                "schema": "raw",
+                "name": "employees",
+                "database": "my-project-19032025"
+            },
+            "fileName": "definitions\\sources\\raw_dependencies.js",
+            "canonicalTarget": {
+                "schema": "raw",
+                "name": "employees",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "target": {
+                "schema": "raw",
+                "name": "fact_sales",
+                "database": "my-project-19032025"
+            },
+            "fileName": "definitions\\sources\\raw_dependencies.js",
+            "canonicalTarget": {
+                "schema": "raw",
+                "name": "fact_sales",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "target": {
+                "schema": "raw",
+                "name": "locations",
+                "database": "my-project-19032025"
+            },
+            "fileName": "definitions\\sources\\raw_dependencies.js",
+            "canonicalTarget": {
+                "schema": "raw",
+                "name": "locations",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "target": {
+                "schema": "raw",
+                "name": "prices",
+                "database": "my-project-19032025"
+            },
+            "fileName": "definitions\\sources\\raw_dependencies.js",
+            "canonicalTarget": {
+                "schema": "raw",
+                "name": "prices",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "target": {
+                "schema": "raw",
+                "name": "regions",
+                "database": "my-project-19032025"
+            },
+            "fileName": "definitions\\sources\\raw_dependencies.js",
+            "canonicalTarget": {
+                "schema": "raw",
+                "name": "regions",
+                "database": "my-project-19032025"
+            }
+        },
+        {
+            "target": {
+                "schema": "raw",
+                "name": "sku",
+                "database": "my-project-19032025"
+            },
+            "fileName": "definitions\\sources\\raw_dependencies.js",
+            "canonicalTarget": {
+                "schema": "raw",
+                "name": "sku",
+                "database": "my-project-19032025"
+            }
+        }
+    ],
+    "dataformCoreVersion": "3.0.37",
+    "targets": [
+        {
+            "schema": "analytics",
+            "name": "sales_performance_by_countries",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "cities_countries_relationship",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "countries_regions_relationship",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "discounts_sku_relationship",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "locations_cities_relationship",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "prices_sku_relationship",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "sales_employees_relationship",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "sales_locations_relationship",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "sales_sku_relationship",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "marts",
+            "name": "geo_locations",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "marts",
+            "name": "geo_locations_enriched",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "marts",
+            "name": "sales_enriched",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "raw",
+            "name": "cities",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "raw",
+            "name": "countries",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "raw",
+            "name": "discounts",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "raw",
+            "name": "employees",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "raw",
+            "name": "fact_sales",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "raw",
+            "name": "locations",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "raw",
+            "name": "prices",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "raw",
+            "name": "regions",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "raw",
+            "name": "sku",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_cities_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_cities_assertions_rowConditions",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_cities",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_countries_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_countries_assertions_rowConditions",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_countries",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_countries_latest_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_countries_latest",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_discounts_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_discounts_assertions_rowConditions",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_discounts",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_discounts_latest_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_discounts_latest",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_employees_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_employees_assertions_rowConditions",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_employees",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_locations_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_locations_assertions_rowConditions",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_locations",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_prices_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_prices_assertions_rowConditions",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_prices",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_prices_latest_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_prices_latest",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_regions_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_regions_assertions_rowConditions",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_regions",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_regions_latest_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_regions_latest",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_sales_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_sales_assertions_rowConditions",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_sales",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_sku_assertions_uniqueKey_0",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "assertions",
+            "name": "staging_stg_sku_assertions_rowConditions",
+            "database": "my-project-19032025"
+        },
+        {
+            "schema": "staging",
+            "name": "stg_sku",
+            "database": "my-project-19032025"
+        }
+    ]
+}
+
