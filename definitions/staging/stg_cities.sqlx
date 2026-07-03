@@ -8,5 +8,5 @@ config {
     }
 }
 
-select *
+select *, unknown_field
 from ${ref("cities")}
