@@ -105,10 +105,9 @@ def main():
     start_time = time.time()
     actions = []
     previous_state = None
-    assertions_header_printed = False
 
     formatter.print_header()
-    formatter.print_section_header("Models")
+    formatter.print_section_header("Workflow Actions")
 
     while True:
 
@@ -153,11 +152,6 @@ def main():
                 active_action = _sort_by_start_time(candidates)[0]
                 active_action_key = _action_key(active_action)
                 active_action_started = False
-
-            if active_action.is_assertion and not assertions_header_printed:
-                print()
-                formatter.print_section_header("Assertions")
-                assertions_header_printed = True
 
             if active_action.state in SKIPPED_ACTION_STATES:
                 _print_action(

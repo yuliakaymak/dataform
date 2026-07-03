@@ -139,4 +139,10 @@ jobs:
           WORKFLOW_INVOCATION: ${{ steps.workflow.outputs.workflow_invocation }}
         run: |
           python scripts/list_workflow_actions.py
+
+      - name: Evaluate Workflow Result
+        env:
+          WORKFLOW_INVOCATION: ${{ steps.workflow.outputs.workflow_invocation }}
+        run: |
+          python scripts/evaluate_workflow_result.py
       

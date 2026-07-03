@@ -12,6 +12,10 @@ class ConsoleFormatter:
     HEADER_WIDTH = 62
     SECTION_WIDTH = 60
     NAME_WIDTH = 100
+    RED = "\033[31m"
+    YELLOW = "\033[33m"
+    GREEN = "\033[32m"
+    RESET = "\033[0m"
 
     STATUS = {
         "SUCCEEDED": "[ OK ]",
@@ -43,7 +47,7 @@ class ConsoleFormatter:
         self._print_summary(report)
 
         if report.has_failures:
-            self._print_errors(report)
+            self.print_errors(report.failed_actions)
 
     def print_header(self) -> None:
         print("─" * self.HEADER_WIDTH)
@@ -195,6 +199,8 @@ class ConsoleFormatter:
         )
 
         print()
+        print("-" * self.HEADER_WIDTH)
+        print()
 
         print(
             f"{'Assertions total':<18}: "
@@ -226,20 +232,30 @@ class ConsoleFormatter:
 
         print()
 
-    def _print_errors(
+    def print_errors(
         self,
-        report: BuildReport,
+        actions: list[WorkflowAction],
+        title: str = "Errors",
+        color: str | None = None,
     ) -> None:
         """
         Prints failed workflow actions.
         """
 
+        if not actions:
+            return
+
+        title_text = title
+
+        if color:
+            title_text = f"{color}{title}{self.RESET}"
+
         print("─" * self.HEADER_WIDTH)
-        print("Errors")
+        print(title_text)
         print("─" * self.HEADER_WIDTH)
         print()
 
-        for index, action in enumerate(report.failed_actions):
+        for index, action in enumerate(actions):
 
             display_name = (
                 f"{action.target.schema}."
@@ -264,10 +280,17 @@ class ConsoleFormatter:
                 or "No failure reason was provided."
             )
 
-            if index < len(report.failed_actions) - 1:
+            if index < len(actions) - 1:
                 print()
                 print("-" * self.HEADER_WIDTH)
                 print()
+
+    def print_colored_message(
+        self,
+        message: str,
+        color: str,
+    ) -> None:
+        print(f"{color}{message}{self.RESET}")
 
     def _print_action(
         self,
