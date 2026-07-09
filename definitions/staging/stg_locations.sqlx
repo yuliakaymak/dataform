@@ -8,5 +8,8 @@ config {
     }
 }
 
-select *
+select 
+    location_id
+    , city_id
+    , full_address
 from ${ref("locations")}
