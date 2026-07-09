@@ -8,5 +8,5 @@ config {
     }
 }
 
-select *
+select *, locations -- intentional mistake, no such field in my source
 from ${ref("locations")}
