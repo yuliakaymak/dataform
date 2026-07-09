@@ -8,5 +8,8 @@ config {
     }
 }
 
-select *, locations -- intentional mistake, no such field in my source
+select 
+    location_id
+    , city_id
+    , full_address
 from ${ref("locations")}
